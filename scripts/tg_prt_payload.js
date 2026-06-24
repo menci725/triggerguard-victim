@@ -20,41 +20,33 @@ fs.writeFileSync("triggerguard-prt-marker.txt", lines.join("\n") + "\n");
 console.log(lines.join("\n"));
 
 if (mode === "prove_write") {
-  const marker = `triggerguard-${Date.now()}`;
-  const createCommand = [
+  const runId = process.env.GITHUB_RUN_ID || `${Date.now()}`;
+  const proofPath = `triggerguard-proof/prt-${runId}.txt`;
+  const proofBody = [
+    "TRIGGERGUARD_CONTENT_WRITE_PROOF=prt",
+    `repo=${repo}`,
+    `event=${eventName}`,
+    `actor=${actor}`,
+    `run_id=${runId}`,
+  ].join("\n") + "\n";
+  const encoded = Buffer.from(proofBody, "utf8").toString("base64");
+  const command = [
     "gh",
     "api",
-    "-X", "POST",
-    `repos/${repo}/actions/variables`,
-    "-f",
-    `name=TRIGGERGUARD_MARKER`,
-    "-f",
-    `value=${marker}`,
-  ];
-  const updateCommand = [
-    "gh",
-    "api",
-    "-X", "PATCH",
-    `repos/${repo}/actions/variables/TRIGGERGUARD_MARKER`,
-    "-f",
-    `name=TRIGGERGUARD_MARKER`,
-    "-f",
-    `value=${marker}`,
+    "-X", "PUT",
+    `repos/${repo}/contents/${proofPath}`,
+    "-f", `message=TriggerGuard PRT content write proof ${runId}`,
+    "-f", `content=${encoded}`,
   ];
 
   console.log("Attempting optional write proof against disposable test repo.");
-  let result = childProcess.spawnSync(createCommand[0], createCommand.slice(1), {
+  const result = childProcess.spawnSync(command[0], command.slice(1), {
     encoding: "utf8",
     stdio: "pipe",
   });
-  if (result.status !== 0) {
-    result = childProcess.spawnSync(updateCommand[0], updateCommand.slice(1), {
-      encoding: "utf8",
-      stdio: "pipe",
-    });
-  }
 
   console.log(`write_proof_exit=${result.status}`);
+  console.log(`write_proof_path=${proofPath}`);
   if (result.stdout) {
     console.log(result.stdout);
   }

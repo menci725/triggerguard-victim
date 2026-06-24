@@ -19,16 +19,27 @@ else
 fi
 
 if [ "${MODE}" = "prove_write" ]; then
-  MARKER="triggerguard-$(date +%s)"
+  RUN_ID="${GITHUB_RUN_ID:-$(date +%s)}"
+  PROOF_PATH="triggerguard-proof/workflow-run-${RUN_ID}.txt"
+  PROOF_BODY="$(cat <<EOF
+TRIGGERGUARD_CONTENT_WRITE_PROOF=workflow_run
+repo=${REPO}
+event=${EVENT_NAME}
+actor=${ACTOR}
+run_id=${RUN_ID}
+EOF
+)"
+  ENCODED_CONTENT="$(printf '%s\n' "${PROOF_BODY}" | base64 -w 0)"
   echo "Attempting optional write proof against disposable test repo."
+  set +e
   gh api \
-    -X POST \
-    "repos/${REPO}/actions/variables" \
-    -f "name=TRIGGERGUARD_MARKER" \
-    -f "value=${MARKER}" \
-    || gh api \
-    -X PATCH \
-    "repos/${REPO}/actions/variables/TRIGGERGUARD_MARKER" \
-    -f "name=TRIGGERGUARD_MARKER" \
-    -f "value=${MARKER}"
+    -X PUT \
+    "repos/${REPO}/contents/${PROOF_PATH}" \
+    -f "message=TriggerGuard workflow_run content write proof ${RUN_ID}" \
+    -f "content=${ENCODED_CONTENT}"
+  STATUS="$?"
+  set -e
+  echo "write_proof_exit=${STATUS}"
+  echo "write_proof_path=${PROOF_PATH}"
+  exit "${STATUS}"
 fi
