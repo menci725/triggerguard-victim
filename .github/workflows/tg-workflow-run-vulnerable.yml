@@ -1,0 +1,29 @@
+name: TG Workflow Run Vulnerable
+
+on:
+  workflow_run:
+    workflows: ["TG PR Build"]
+    types: [completed]
+
+permissions:
+  contents: write
+  actions: write
+
+jobs:
+  consume:
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    env:
+      TRIGGERGUARD_MODE: observe
+      GITHUB_TOKEN: ${{ github.token }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Download pull request artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: tg-pr-artifact
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ github.token }}
+
+      - name: Execute downloaded artifact payload
+        run: bash tg_artifact_payload.sh

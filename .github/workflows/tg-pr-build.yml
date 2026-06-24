@@ -1,0 +1,27 @@
+name: TG PR Build
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout pull request code
+        uses: actions/checkout@v4
+
+      - name: Build attacker-influenced artifact
+        run: |
+          mkdir -p dist
+          cp ./scripts/tg_artifact_payload.sh dist/tg_artifact_payload.sh
+          chmod +x dist/tg_artifact_payload.sh
+
+      - name: Upload pull request artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: tg-pr-artifact
+          path: dist/
