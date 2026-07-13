@@ -1,0 +1,16 @@
+name: TG Reusable Caller Vulnerable
+
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: write
+  actions: write
+
+jobs:
+  delegate:
+    uses: ./.github/workflows/tg-reusable-callee-vulnerable.yml
+    with:
+      triggerguard_mode: prove_write
+    secrets: inherit

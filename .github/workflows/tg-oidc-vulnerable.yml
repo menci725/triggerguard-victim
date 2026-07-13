@@ -1,0 +1,82 @@
+name: TG OIDC Vulnerable
+
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: write
+  id-token: write
+
+jobs:
+  oidc-after-pr-code:
+    runs-on: ubuntu-latest
+    env:
+      TRIGGERGUARD_MODE: prove_write
+      TRIGGERGUARD_PAYLOAD_KIND: oidc
+      GITHUB_TOKEN: ${{ github.token }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Checkout attacker pull request code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - name: Install dependencies from pull request
+        run: npm install
+
+      - name: Print local attacker marker
+        run: |
+          if [ -f triggerguard-oidc-marker.txt ]; then
+            cat triggerguard-oidc-marker.txt
+          else
+            echo "oidc marker missing"
+            exit 1
+          fi
+
+      - name: Safely request GitHub OIDC token
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -z "${ACTIONS_ID_TOKEN_REQUEST_URL:-}" ] || [ -z "${ACTIONS_ID_TOKEN_REQUEST_TOKEN:-}" ]; then
+            echo "oidc_request_environment_missing"
+            exit 1
+          fi
+
+          RESPONSE="$(curl -fsSL \
+            -H "Authorization: bearer ${ACTIONS_ID_TOKEN_REQUEST_TOKEN}" \
+            "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=triggerguard-demo")"
+
+          TOKEN="$(python3 - "${RESPONSE}" <<'PY'
+          import json
+          import sys
+
+          response = json.loads(sys.argv[1])
+          token = response.get("value", "")
+          if not token:
+              raise SystemExit("missing OIDC token in GitHub response")
+          print(token)
+          PY
+          )"
+
+          python3 - "${TOKEN}" <<'PY'
+          import base64
+          import json
+          import sys
+
+          token = sys.argv[1]
+          parts = token.split(".")
+          if len(parts) < 2:
+              raise SystemExit("OIDC token did not look like a JWT")
+          payload = parts[1]
+          payload += "=" * (-len(payload) % 4)
+          claims = json.loads(base64.urlsafe_b64decode(payload.encode()).decode())
+          summary = {
+              "iss": claims.get("iss"),
+              "aud": claims.get("aud"),
+              "sub": claims.get("sub"),
+          }
+          print("TRIGGERGUARD_OIDC_MARKER=minted")
+          print("oidc_token_present=yes")
+          print("oidc_claims=" + json.dumps(summary, sort_keys=True))
+          PY
