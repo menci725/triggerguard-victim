@@ -1,0 +1,6 @@
+TRIGGERGUARD_CONTENT_WRITE_PROOF=oidc
+repo=menci725/triggerguard-victim
+event=pull_request_target
+actor=menci725
+payload_kind=oidc
+run_id=29299378516
