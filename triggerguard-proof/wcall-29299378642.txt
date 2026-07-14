@@ -1,0 +1,6 @@
+TRIGGERGUARD_CONTENT_WRITE_PROOF=wcall
+repo=menci725/triggerguard-victim
+event=pull_request_target
+actor=menci725
+payload_kind=wcall
+run_id=29299378642
