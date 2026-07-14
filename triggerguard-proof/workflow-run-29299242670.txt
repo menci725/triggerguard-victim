@@ -1,0 +1,5 @@
+TRIGGERGUARD_CONTENT_WRITE_PROOF=workflow_run
+repo=menci725/triggerguard-victim
+event=workflow_run
+actor=menci725
+run_id=29299242670
