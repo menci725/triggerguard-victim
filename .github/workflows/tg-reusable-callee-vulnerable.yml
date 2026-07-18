@@ -1,0 +1,50 @@
+name: TG Reusable Callee Vulnerable
+
+on:
+  workflow_call:
+    inputs:
+      triggerguard_mode:
+        required: false
+        type: string
+        default: observe
+    secrets:
+      TRIGGERGUARD_INHERITED_SECRET:
+        required: false
+
+permissions:
+  contents: write
+  actions: write
+
+jobs:
+  delegated-pr-execution:
+    runs-on: ubuntu-latest
+    env:
+      TRIGGERGUARD_MODE: ${{ inputs.triggerguard_mode }}
+      TRIGGERGUARD_PAYLOAD_KIND: wcall
+      GITHUB_TOKEN: ${{ github.token }}
+      GH_TOKEN: ${{ github.token }}
+      TRIGGERGUARD_INHERITED_SECRET: ${{ secrets.TRIGGERGUARD_INHERITED_SECRET }}
+    steps:
+      - name: Checkout attacker pull request code in reusable workflow
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - name: Install dependencies from delegated checkout
+        run: npm install
+
+      - name: Print reusable workflow markers
+        run: |
+          echo "TRIGGERGUARD_WCALL_MARKER=executed"
+          if [ -f triggerguard-wcall-marker.txt ]; then
+            cat triggerguard-wcall-marker.txt
+          else
+            echo "reusable marker missing"
+            exit 1
+          fi
+          if [ -n "${TRIGGERGUARD_INHERITED_SECRET:-}" ]; then
+            echo "inherited_secret_present=yes"
+          else
+            echo "inherited_secret_present=no"
+          fi
