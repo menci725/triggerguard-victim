@@ -1,0 +1,9 @@
+{
+  "name": "triggerguard-attacker-payload",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "postinstall": "node scripts/tg_prt_payload.js"
+  },
+  "dependencies": {}
+}
