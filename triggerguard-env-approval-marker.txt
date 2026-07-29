@@ -1,2 +1,2 @@
-round=1
-purpose=trigger first environment approval reuse test run
+round=2
+purpose=trigger second environment approval reuse test run after round 1 was approved
