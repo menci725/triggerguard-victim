@@ -1,0 +1,2 @@
+Hosted-runner validation trigger for the disposable TriggerGuard victim repository.
+This file contains no credentials and is safe to remove after the run.
